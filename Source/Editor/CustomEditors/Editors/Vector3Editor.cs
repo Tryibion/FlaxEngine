@@ -60,17 +60,28 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
-
+            var xElement = grid.TextBox();
+            xElement.Text = "X";
+            xElement.TextBox.IsReadOnly = true;
+            xElement.TextBox.BackgroundColor = Color.Red;
             XElement = grid.FloatValue();
             XElement.SetLimits(limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
+            var yElement = grid.TextBox();
+            yElement.Text = "Y";
+            yElement.TextBox.IsReadOnly = true;
+            yElement.TextBox.BackgroundColor = Color.Green;
             YElement = grid.FloatValue();
             YElement.SetLimits(limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
-
+            
+            var zElement = grid.TextBox();
+            zElement.Text = "Z";
+            zElement.TextBox.IsReadOnly = true;
+            zElement.TextBox.BackgroundColor = Color.Blue;
             ZElement = grid.FloatValue();
             ZElement.SetLimits(limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
