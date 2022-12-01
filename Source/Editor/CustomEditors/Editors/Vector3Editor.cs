@@ -51,7 +51,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var gridControl = grid.CustomControl;
             gridControl.ClipChildren = false;
             gridControl.Height = TextBox.DefaultHeight;
-            gridControl.SlotsHorizontally = 3;
+            gridControl.SlotsHorizontally = 6;
             gridControl.SlotsVertically = 1;
 
             LimitAttribute limit = null;
@@ -60,10 +60,12 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
+            
             var xElement = grid.TextBox();
             xElement.Text = "X";
             xElement.TextBox.IsReadOnly = true;
             xElement.TextBox.BackgroundColor = Color.Red;
+            xElement.TextBox.BorderColor = Color.Red;
             XElement = grid.FloatValue();
             XElement.SetLimits(limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
@@ -73,6 +75,7 @@ namespace FlaxEditor.CustomEditors.Editors
             yElement.Text = "Y";
             yElement.TextBox.IsReadOnly = true;
             yElement.TextBox.BackgroundColor = Color.Green;
+            yElement.TextBox.BorderColor = Color.Green;
             YElement = grid.FloatValue();
             YElement.SetLimits(limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
@@ -82,6 +85,7 @@ namespace FlaxEditor.CustomEditors.Editors
             zElement.Text = "Z";
             zElement.TextBox.IsReadOnly = true;
             zElement.TextBox.BackgroundColor = Color.Blue;
+            zElement.TextBox.BorderColor = Color.Blue;
             ZElement = grid.FloatValue();
             ZElement.SetLimits(limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
