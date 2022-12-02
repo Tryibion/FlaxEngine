@@ -60,32 +60,26 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
-            
-            var xElement = grid.TextBox();
-            xElement.Text = "X";
-            xElement.TextBox.IsReadOnly = true;
-            xElement.TextBox.BackgroundColor = Color.Red;
-            xElement.TextBox.BorderColor = Color.Red;
+
+            var xElement = grid.Label("X", TextAlignment.Center);
+            xElement.Label.BackgroundColor = Color.Red;
+            xElement.Label.TextColor = Color.White;
             XElement = grid.FloatValue();
             XElement.SetLimits(limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
-            var yElement = grid.TextBox();
-            yElement.Text = "Y";
-            yElement.TextBox.IsReadOnly = true;
-            yElement.TextBox.BackgroundColor = Color.Green;
-            yElement.TextBox.BorderColor = Color.Green;
+            var yElement = grid.Label("Y", TextAlignment.Center);
+            yElement.Label.BackgroundColor = Color.Green;
+            yElement.Label.TextColor = Color.White;
             YElement = grid.FloatValue();
             YElement.SetLimits(limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
             
-            var zElement = grid.TextBox();
-            zElement.Text = "Z";
-            zElement.TextBox.IsReadOnly = true;
-            zElement.TextBox.BackgroundColor = Color.Blue;
-            zElement.TextBox.BorderColor = Color.Blue;
+            var zElement = grid.Label("Z", TextAlignment.Center);
+            zElement.Label.BackgroundColor = Color.Blue;
+            zElement.Label.TextColor = Color.White;
             ZElement = grid.FloatValue();
             ZElement.SetLimits(limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
