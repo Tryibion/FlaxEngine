@@ -41,6 +41,10 @@ namespace FlaxEditor.CustomEditors.Editors
         /// </summary>
         protected FloatValueElement ZElement;
 
+        protected LabelElement XLabel;
+        protected LabelElement YLabel;
+        protected LabelElement ZLabel;
+
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
 
@@ -66,11 +70,11 @@ namespace FlaxEditor.CustomEditors.Editors
             xPanel.Panel.Margin = new Margin(0);
             xPanel.Panel.AutoSize = false;
 
-            var xLabel = xPanel.Label("X", TextAlignment.Center);
-            xLabel.Label.BackgroundColor = Color.Red;
-            xLabel.Label.TextColor = Color.White;
-            xLabel.Label.Width = 20f;
-            
+            XLabel = xPanel.Label("X", TextAlignment.Center);
+            XLabel.Label.BackgroundColor = Color.Transparent;
+            XLabel.Label.TextColor = Color.White;
+            XLabel.Label.Width = 20f;
+
             XElement = xPanel.FloatValue();
             XElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
             XElement.ValueBox.Location += new Float2(22, 0);
@@ -84,11 +88,11 @@ namespace FlaxEditor.CustomEditors.Editors
             yPanel.Panel.Margin = new Margin(0);
             yPanel.Panel.AutoSize = false;
 
-            var yLabel = yPanel.Label("Y", TextAlignment.Center);
-            yLabel.Label.BackgroundColor = Color.Green;
-            yLabel.Label.TextColor = Color.White;
-            yLabel.Label.Width = 20f;
-            
+            YLabel = yPanel.Label("Y", TextAlignment.Center);
+            YLabel.Label.BackgroundColor = Color.Transparent;;
+            YLabel.Label.TextColor = Color.White;
+            YLabel.Label.Width = 20f;
+
             YElement = yPanel.FloatValue();
             YElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
             YElement.ValueBox.Location += new Float2(22, 0);
@@ -102,11 +106,11 @@ namespace FlaxEditor.CustomEditors.Editors
             zPanel.Panel.Margin = new Margin(0);
             zPanel.Panel.AutoSize = false;
             
-            var zLabel = zPanel.Label("Z", TextAlignment.Center);
-            zLabel.Label.BackgroundColor = Color.Blue;
-            zLabel.Label.TextColor = Color.White;
-            zLabel.Label.Width = 20f;
-            
+            ZLabel = zPanel.Label("Z", TextAlignment.Center);
+            ZLabel.Label.BackgroundColor = Color.Transparent;
+            ZLabel.Label.TextColor = Color.White;
+            ZLabel.Label.Width = 20f;
+
             ZElement = zPanel.FloatValue();
             ZElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
             ZElement.ValueBox.Location += new Float2(22, 0);

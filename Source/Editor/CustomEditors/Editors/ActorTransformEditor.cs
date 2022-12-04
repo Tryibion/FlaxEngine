@@ -45,6 +45,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 YElement.ValueBox.BorderSelectedColor = AxisColorY;
                 ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
                 ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
+                XLabel.Label.BackgroundColor = Color.Red;
+                YLabel.Label.BackgroundColor = Color.Green;
+                ZLabel.Label.BackgroundColor = Color.Blue;
             }
         }
 
