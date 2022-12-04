@@ -50,8 +50,8 @@ namespace FlaxEditor.CustomEditors.Editors
             var grid = layout.CustomContainer<UniformGridPanel>();
             var gridControl = grid.CustomControl;
             gridControl.ClipChildren = false;
-            gridControl.Height = TextBox.DefaultHeight;
-            gridControl.SlotsHorizontally = 6;
+             gridControl.Height = TextBox.DefaultHeight + 5f;
+            gridControl.SlotsHorizontally = 3;
             gridControl.SlotsVertically = 1;
 
             LimitAttribute limit = null;
@@ -61,26 +61,53 @@ namespace FlaxEditor.CustomEditors.Editors
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
 
-            var xElement = grid.Label("X", TextAlignment.Center);
-            xElement.Label.BackgroundColor = Color.Red;
-            xElement.Label.TextColor = Color.White;
-            XElement = grid.FloatValue();
+            var xPanel = grid.HorizontalPanel();
+            xPanel.Panel.Margin = new Margin(0);
+            xPanel.Panel.AutoSize = false;
+
+            var xLabel = xPanel.Label("X", TextAlignment.Center);
+            xLabel.Label.BackgroundColor = Color.Red;
+            xLabel.Label.TextColor = Color.White;
+            xLabel.Label.Width = 20f;
+            
+            XElement = xPanel.FloatValue();
+            XElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
+            XElement.ValueBox.Location += new Float2(22, 0);
+            XElement.ValueBox.Width -= 22f;
             XElement.SetLimits(limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
-            var yElement = grid.Label("Y", TextAlignment.Center);
-            yElement.Label.BackgroundColor = Color.Green;
-            yElement.Label.TextColor = Color.White;
-            YElement = grid.FloatValue();
+            var yPanel = grid.HorizontalPanel();
+            yPanel.Panel.Margin = new Margin(0);
+            yPanel.Panel.AutoSize = false;
+
+            var yLabel = yPanel.Label("Y", TextAlignment.Center);
+            yLabel.Label.BackgroundColor = Color.Green;
+            yLabel.Label.TextColor = Color.White;
+            yLabel.Label.Width = 20f;
+            
+            YElement = yPanel.FloatValue();
+            YElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
+            YElement.ValueBox.Location += new Float2(22, 0);
+            YElement.ValueBox.Width -= 22f;
             YElement.SetLimits(limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
             
-            var zElement = grid.Label("Z", TextAlignment.Center);
-            zElement.Label.BackgroundColor = Color.Blue;
-            zElement.Label.TextColor = Color.White;
-            ZElement = grid.FloatValue();
+            var zPanel = grid.HorizontalPanel();
+            zPanel.Panel.Margin = new Margin(0);
+            zPanel.Panel.AutoSize = false;
+            
+            var zLabel = zPanel.Label("Z", TextAlignment.Center);
+            zLabel.Label.BackgroundColor = Color.Blue;
+            zLabel.Label.TextColor = Color.White;
+            zLabel.Label.Width = 20f;
+            
+            ZElement = zPanel.FloatValue();
+            ZElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
+            ZElement.ValueBox.Location += new Float2(22, 0);
+            ZElement.ValueBox.Width -= 22f;
             ZElement.SetLimits(limit);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
