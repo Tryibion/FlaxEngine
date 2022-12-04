@@ -45,7 +45,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var grid = layout.CustomContainer<UniformGridPanel>();
             var gridControl = grid.CustomControl;
             gridControl.ClipChildren = false;
-            gridControl.Height = TextBox.DefaultHeight;
+            gridControl.Height = TextBox.DefaultHeight + 5;
             gridControl.SlotsHorizontally = 2;
             gridControl.SlotsVertically = 1;
 
@@ -56,12 +56,36 @@ namespace FlaxEditor.CustomEditors.Editors
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
             }
 
-            XElement = grid.FloatValue();
+            var xPanel = grid.HorizontalPanel();
+            xPanel.Panel.Margin = new Margin(0);
+            xPanel.Panel.AutoSize = false;
+
+            var xLabel = xPanel.Label("X", TextAlignment.Center);
+            xLabel.Label.BackgroundColor = Color.Red;
+            xLabel.Label.TextColor = Color.White;
+            xLabel.Label.Width = 20f;
+            
+            XElement = xPanel.FloatValue();
+            XElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
+            XElement.ValueBox.Location += new Float2(22, 0);
+            XElement.ValueBox.Width -= 22f;
             XElement.SetLimits(limit);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
-            YElement = grid.FloatValue();
+            var yPanel = grid.HorizontalPanel();
+            yPanel.Panel.Margin = new Margin(0);
+            yPanel.Panel.AutoSize = false;
+
+            var yLabel = yPanel.Label("Y", TextAlignment.Center);
+            yLabel.Label.BackgroundColor = Color.Green;
+            yLabel.Label.TextColor = Color.White;
+            yLabel.Label.Width = 20f;
+            
+            YElement = yPanel.FloatValue();
+            YElement.ValueBox.AnchorPreset = AnchorPresets.StretchAll;
+            YElement.ValueBox.Location += new Float2(22, 0);
+            YElement.ValueBox.Width -= 22f;
             YElement.SetLimits(limit);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;

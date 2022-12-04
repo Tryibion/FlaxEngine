@@ -59,6 +59,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Use float value editor
                 var floatValue = layout.FloatValue();
+                floatValue.ValueBox.Height += 5;
                 floatValue.ValueBox.ValueChanged += OnValueChanged;
                 floatValue.ValueBox.SlidingEnd += ClearToken;
                 _element = floatValue;
