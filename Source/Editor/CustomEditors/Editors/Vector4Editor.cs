@@ -55,7 +55,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var grid = layout.CustomContainer<UniformGridPanel>();
             var gridControl = grid.CustomControl;
             gridControl.ClipChildren = false;
-            gridControl.Height = TextBox.DefaultHeight + 5;
+            gridControl.Height = TextBox.DefaultHeight;
             gridControl.SlotsHorizontally = 4;
             gridControl.SlotsVertically = 1;
 
@@ -67,6 +67,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             var xPanel = grid.HorizontalPanel();
+            xPanel.Panel.ClipChildren = false;
             xPanel.Panel.Margin = new Margin(0);
             xPanel.Panel.AutoSize = false;
 
@@ -84,6 +85,7 @@ namespace FlaxEditor.CustomEditors.Editors
             XElement.ValueBox.SlidingEnd += ClearToken;
 
             var yPanel = grid.HorizontalPanel();
+            yPanel.Panel.ClipChildren = false;
             yPanel.Panel.Margin = new Margin(0);
             yPanel.Panel.AutoSize = false;
 
@@ -101,6 +103,7 @@ namespace FlaxEditor.CustomEditors.Editors
             YElement.ValueBox.SlidingEnd += ClearToken;
             
             var zPanel = grid.HorizontalPanel();
+            zPanel.Panel.ClipChildren = false;
             zPanel.Panel.Margin = new Margin(0);
             zPanel.Panel.AutoSize = false;
             
@@ -118,6 +121,7 @@ namespace FlaxEditor.CustomEditors.Editors
             ZElement.ValueBox.SlidingEnd += ClearToken;
 
             var wPanel = grid.HorizontalPanel();
+            wPanel.Panel.ClipChildren = false;
             wPanel.Panel.Margin = new Margin(0);
             wPanel.Panel.AutoSize = false;
             
