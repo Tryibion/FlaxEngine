@@ -149,6 +149,7 @@ namespace FlaxEditor.Windows
                 FarPlane = 20000.0f
             };
             Viewport.Task.ViewFlags = ViewFlags.DefaultEditor;
+            Viewport.ShowUI = false; // Todo: cache last state
 
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
             Editor.Scene.ActorRemoved += SceneOnActorRemoved;

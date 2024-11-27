@@ -8,6 +8,7 @@ using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor
 {
@@ -178,6 +179,8 @@ namespace FlaxEditor
         /// </summary>
         public readonly ContainerControl UIRoot;
 
+        public ContainerControl OptionalMainControl;
+
         internal Float2 ViewPosition
         {
             get => _view.Location / -ViewScale;
@@ -202,7 +205,7 @@ namespace FlaxEditor
             }
         }
 
-        public UIEditorRoot(bool enableCamera = false)
+        public UIEditorRoot(bool enableCamera = false, ContainerControl root = null)
         {
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
@@ -688,6 +691,12 @@ namespace FlaxEditor
             // Raycast only controls with content (eg. skips transparent panels)
             return RayCastChildren(ref location, out hit);
 #else
+
+            if (OptionalMainControl != null)
+            {
+                hit = OptionalMainControl.GetChildAtRecursive(location - UIRoot.Location + OptionalMainControl.Parent.Location);
+                return hit != null;
+            }
             // Find any control under mouse (hierarchical)
             hit = GetChildAtRecursive(location);
             if (hit is View || hit is CanvasContainer)

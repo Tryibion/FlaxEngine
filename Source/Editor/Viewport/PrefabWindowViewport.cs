@@ -9,6 +9,7 @@ using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
+using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -44,7 +45,7 @@ namespace FlaxEditor.Viewport
         private sealed class PrefabUIEditorRoot : UIEditorRoot
         {
             private readonly PrefabWindowViewport _viewport;
-            private bool UI => _viewport._hasUILinkedCached;
+            private bool UI => _viewport.ShowUI;
 
             public PrefabUIEditorRoot(PrefabWindowViewport viewport)
             : base(true)
@@ -57,6 +58,57 @@ namespace FlaxEditor.Viewport
             public override bool EnableSelecting => UI;
             public override bool EnableBackground => UI;
             public override TransformGizmo TransformGizmo => _viewport.TransformGizmo;
+        }
+
+        private bool _showUI = false;
+
+        public bool ShowUI
+        {
+            get => _showUI;
+            set
+            {
+                _showUI = value;
+                if (_showUI)
+                {
+                    // UI widget
+                    Gizmos.Active = null;
+                    ViewportCamera = new UIEditorCamera { UIEditor = _uiRoot };
+
+                    // Hide 3D visuals
+                    ShowEditorPrimitives = false;
+                    ShowDefaultSceneActors = false;
+                    ShowDebugDraw = false;
+
+                    // Show whole UI on startup
+                    var canvas = (CanvasRootControl)_uiParentLink.Children.FirstOrDefault(x => x is CanvasRootControl);
+                    if (canvas != null)
+                        ViewportCamera.ShowActor(canvas.Canvas);
+                    else if (Instance is UIControl)
+                        ViewportCamera.ShowActor(Instance);
+                    _uiRoot.Visible = true;
+                }
+                else
+                {
+                    // Generic prefab
+                    Gizmos.Active = TransformGizmo;
+                    ViewportCamera = new FPSCamera();
+                    _uiRoot.Visible = false;
+                }
+
+                // Update default components usage
+                bool defaultFeatures = !_showUI;
+                _disableInputUpdate = _showUI;
+                _spritesRenderer.Enabled = defaultFeatures;
+                SelectionOutline.Enabled = defaultFeatures;
+                _showDefaultSceneButton.Visible = defaultFeatures;
+                _cameraWidget.Visible = defaultFeatures;
+                _cameraButton.Visible = defaultFeatures;
+                _orthographicModeButton.Visible = defaultFeatures;
+                Task.Enabled = defaultFeatures;
+                UseAutomaticTaskManagement = defaultFeatures;
+                ShowDefaultSceneActors = defaultFeatures;
+                TintColor = defaultFeatures ? Color.White : Color.Transparent;
+            }
         }
 
         private readonly PrefabWindow _window;
@@ -137,6 +189,12 @@ namespace FlaxEditor.Viewport
             _uiRoot = new PrefabUIEditorRoot(this);
             _uiRoot.IndexInParent = 0; // Move viewport down below other widgets in the viewport
             _uiParentLink = _uiRoot.UIRoot;
+            
+            var container = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
+            container.Parent = this;
+            var uiModeButton = new ViewportWidgetButton("UI Mode", SpriteHandle.Invalid, null, true);
+            uiModeButton.Clicked += button => ShowUI = button.Checked;
+            uiModeButton.Parent = container;
 
             EditorGizmoViewport.AddGizmoViewportWidgets(this, TransformGizmo);
 
@@ -156,48 +214,11 @@ namespace FlaxEditor.Viewport
                 return;
             _hasUILinkedCached = _hasUILinked;
 
-            if (_hasUILinked)
-            {
-                // UI widget
-                Gizmos.Active = null;
-                ViewportCamera = new UIEditorCamera { UIEditor = _uiRoot };
-
-                // Hide 3D visuals
-                ShowEditorPrimitives = false;
-                ShowDefaultSceneActors = false;
-                ShowDebugDraw = false;
-
-                // Show whole UI on startup
-                var canvas = (CanvasRootControl)_uiParentLink.Children.FirstOrDefault(x => x is CanvasRootControl);
-                if (canvas != null)
-                    ViewportCamera.ShowActor(canvas.Canvas);
-                else if (Instance is UIControl)
-                    ViewportCamera.ShowActor(Instance);
-            }
-            else
-            {
-                // Generic prefab
-                Gizmos.Active = TransformGizmo;
-                ViewportCamera = new FPSCamera();
-            }
-
-            // Update default components usage
-            bool defaultFeatures = !_hasUILinked;
-            _disableInputUpdate = _hasUILinked;
-            _spritesRenderer.Enabled = defaultFeatures;
-            SelectionOutline.Enabled = defaultFeatures;
-            _showDefaultSceneButton.Visible = defaultFeatures;
-            _cameraWidget.Visible = defaultFeatures;
-            _cameraButton.Visible = defaultFeatures;
-            _orthographicModeButton.Visible = defaultFeatures;
-            Task.Enabled = defaultFeatures;
-            UseAutomaticTaskManagement = defaultFeatures;
-            TintColor = defaultFeatures ? Color.White : Color.Transparent;
         }
 
         private void OnUpdate(float deltaTime)
         {
-            UpdateGizmoMode();
+            //UpdateGizmoMode();
             for (int i = 0; i < Gizmos.Count; i++)
             {
                 Gizmos[i].Update(deltaTime);

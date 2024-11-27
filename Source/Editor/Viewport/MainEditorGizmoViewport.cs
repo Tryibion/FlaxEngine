@@ -2,12 +2,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
+using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Modes;
+using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -27,6 +30,103 @@ namespace FlaxEditor.Viewport
         private readonly ContextMenuButton _showNavigationButton;
 
         private SelectionOutline _customSelectionOutline;
+        public ContainerControl _uiParentLink;
+        internal bool _hasUILinked;
+        private GameEditUIEditorRoot _guiRoot;
+        
+        [HideInEditor]
+        private sealed class GameEditUIEditorRoot : UIEditorRoot
+        {
+            private readonly MainEditorGizmoViewport _viewport;
+            private bool UI => _viewport.ShowUI;
+
+            public GameEditUIEditorRoot(MainEditorGizmoViewport viewport)
+            : base(true)
+            {
+                _viewport = viewport;
+                Parent = viewport;
+            }
+
+            public override bool EnableInputs => !UI;
+            public override bool EnableSelecting => UI;
+            public override bool EnableBackground => UI;
+            public override TransformGizmo TransformGizmo => _viewport.TransformGizmo;
+/*
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+                var mat = Matrix3x3.Translation2D(RootControl.GameRoot.LocalLocation);
+                Render2D.PushTransform(UIRoot._cachedTransform);
+                Render2D.PushTransform(mat);
+                Render2D.PushClip(UIRoot.GetClientArea());
+                RootControl.GameRoot.Draw();
+                Render2D.PopClip();
+                Render2D.PopTransform();
+                Render2D.PopTransform();
+            }
+*/
+        }
+
+        private bool _showUI = false;
+
+        public bool ShowUI
+        {
+            get => _showUI;
+            set
+            {
+                _showUI = value;
+                if (_showUI)
+                {
+                    _guiRoot.OptionalMainControl = RootControl.GameRoot;
+                    // UI widget
+                    Gizmos.Active = null;
+                    ViewportCamera = new UIEditorCamera { UIEditor = _guiRoot };
+                    
+                    // Show whole UI on startup
+                    var canvas = (CanvasRootControl)_uiParentLink.Children.FirstOrDefault(x => x is CanvasRootControl);
+                    if (canvas != null)
+                        ViewportCamera.ShowActor(canvas.Canvas);
+                    _guiRoot.Visible = true;
+                }
+                else
+                {
+                    // Generic prefab
+                    Gizmos.Active = TransformGizmo;
+                    ViewportCamera = new FPSCamera();
+                    _guiRoot.Visible = false;
+                }
+            }
+        }
+        
+        private void UpdateLinkage()
+        {
+            if (Editor.IsPlayMode)
+                return;
+
+            // Clear flag
+            _hasUILinked = false;
+
+            // Link UI canvases to the viewport
+            foreach (var scene in Level.Scenes)
+            {
+                LinkCanvas(scene);
+            }
+        }
+        
+        private void LinkCanvas(Actor actor)
+        {
+            if (actor is UICanvas uiCanvas)
+            {
+                uiCanvas.EditorOverride(Task, _uiParentLink);
+                if (uiCanvas.GUI.Parent == _uiParentLink)
+                    _hasUILinked = true;
+            }
+
+            var children = actor.ChildrenCount;
+            for (int i = 0; i < children; i++)
+                LinkCanvas(actor.GetChild(i));
+        }
 
         /// <summary>
         /// The editor sprites rendering effect.
@@ -251,6 +351,17 @@ namespace FlaxEditor.Viewport
                 Gizmos.SetActiveMode<TransformGizmoMode>();
             }
 
+            // Use custom UI root
+            _guiRoot = new GameEditUIEditorRoot(this);
+            _guiRoot.IndexInParent = 0;
+            _uiParentLink = _guiRoot.UIRoot;
+            
+            var container = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
+            container.Parent = this;
+            var uiModeButton = new ViewportWidgetButton("UI Mode", SpriteHandle.Invalid, null, true);
+            uiModeButton.Clicked += button => ShowUI = button.Checked;
+            uiModeButton.Parent = container;
+
             // Setup input actions
             InputActions.Add(options => options.LockFocusSelection, LockFocusSelection);
             InputActions.Add(options => options.FocusSelection, FocusSelection);
@@ -286,6 +397,11 @@ namespace FlaxEditor.Viewport
 
                 var focusDistance = Mathf.Max(selectionBounds.Radius * 2d, 100d);
                 ViewPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
+            }
+
+            if (Level.ScenesCount > 0)
+            {
+                UpdateLinkage();
             }
         }
 

@@ -355,7 +355,7 @@ namespace FlaxEditor.Windows.Assets
         private void OnPrefabOpened()
         {
             _viewport.Prefab = _asset;
-            _viewport.UpdateGizmoMode();
+            _viewport.ShowUI = false; // Todo: cache this somehow
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);

@@ -10,6 +10,7 @@ using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows
 {
@@ -243,11 +244,10 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Root control for game UI preview in Editor. Supports basic UI editing via <see cref="UIEditorRoot"/>.
         /// </summary>
-        private class GameRoot : UIEditorRoot
+        private class GameRoot : InputsPassThrough
         {
-            public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode;
-            public override bool EnableSelecting => !Editor.IsPlayMode || Time.GamePaused;
-            public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
+            /// <inheritdoc />
+            public override bool EnableInputs => !Time.GamePaused;
         }
 
         /// <summary>
@@ -275,9 +275,13 @@ namespace FlaxEditor.Windows
             // Override the game GUI root
             _guiRoot = new GameRoot
             {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                //Visible = false,
+                AutoFocus = false,
                 Parent = _viewport
             };
-            RootControl.GameRoot = _guiRoot.UIRoot;
+            RootControl.GameRoot = _guiRoot;
 
             SizeChanged += control => { ResizeViewport(); };
 
