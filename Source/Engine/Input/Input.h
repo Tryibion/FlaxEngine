@@ -341,6 +341,12 @@ public:
     API_FUNCTION() static void SetInputMappingFromSettings(const JsonAssetReference<class InputSettings>& settings);
 
     /// <summary>
+    /// Sets and overwrites the Action and Axis mappings with the values from a new InputSettings.
+    /// </summary>
+    /// <param name="settings">The input settings.</param>
+    API_FUNCTION() static void SetInputMappingFromSettings(const class InputSettings* settings);
+
+    /// <summary>
     /// Sets and overwrites the Action and Axis mappings with the values from the InputSettings in GameSettings.
     /// </summary>
     API_FUNCTION() static void SetInputMappingToDefaultSettings();
