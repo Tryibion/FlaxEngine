@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -23,8 +23,10 @@ namespace FlaxEditor.Windows
     {
         private readonly RenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
-        private bool _showGUI = true;
+        private bool _showGUI = true, _editGUI = true;
         private bool _showDebugDraw = false;
+        private bool _audioMuted = false;
+        private float _audioVolume = 1;
         private bool _isMaximized = false, _isUnlockingMouse = false;
         private bool _isFloating = false, _isBorderless = false;
         private bool _cursorVisible = true;
@@ -34,8 +36,14 @@ namespace FlaxEditor.Windows
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
 
         private float _toolStripHeight = 24;
-        private bool _showToolStrip = true;
+
+        private ToolStripButton _focusSettingsButton;
         private ToolStripButton _viewportSettingsButton;
+        private ToolStripButton _toggleGuiButton;
+        private ToolStripButton _toggleGuiEditButton;
+        private ToolStripButton _toggleDebugDrawButton;
+        private ToolStripButton _audioMutedButton;
+        private FloatValueBox _audioVolumeValueBox;
 
         // Viewport scaling variables
         private List<ViewportScaleOptions> _defaultViewportScaling = new List<ViewportScaleOptions>();
@@ -44,6 +52,28 @@ namespace FlaxEditor.Windows
         private float _windowAspectRatio = 1;
         private bool _useAspect = false;
         private bool _freeAspect = true;
+
+        private List<PlayModeFocusOptions> _focusOptions = new List<PlayModeFocusOptions>()
+        {
+            new PlayModeFocusOptions
+            {
+                Name = "None",
+                Tooltip = "Don't change focus.",
+                FocusOption = InterfaceOptions.PlayModeFocus.None,
+            },
+            new PlayModeFocusOptions
+            {
+                Name = "Game Window",
+                Tooltip = "Focus the Game Window.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GameWindow,
+            },
+            new PlayModeFocusOptions
+            {
+                Name = "Game Window Then Restore",
+                Tooltip = "Focus the Game Window. On play mode end restore focus to the previous window.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GameWindowThenRestore,
+            },
+        };
 
         /// <summary>
         /// Gets the viewport.
@@ -62,6 +92,24 @@ namespace FlaxEditor.Windows
                 {
                     _showGUI = value;
                     _guiRoot.Visible = value;
+                    _toggleGuiButton.Checked = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether allow editing game GUI in the view or keep it visible-only.
+        /// </summary>
+        public bool EditGUI
+        {
+            get => _editGUI;
+            set
+            {
+                if (value != _editGUI)
+                {
+                    _editGUI = value;
+                    _guiRoot.Editable = value;
+                    _toggleGuiEditButton.Checked = value;
                 }
             }
         }
@@ -72,7 +120,40 @@ namespace FlaxEditor.Windows
         public bool ShowDebugDraw
         {
             get => _showDebugDraw;
-            set => _showDebugDraw = value;
+            set
+            {
+                _showDebugDraw = value;
+                _toggleDebugDrawButton.Checked = value;
+            } 
+        }
+
+        /// <summary>
+        /// Gets or set a value indicating whether Audio is muted.
+        /// </summary>
+        public bool AudioMuted
+        {
+            get => _audioMuted;
+            set
+            {
+                Audio.MasterVolume = value ? 0 : AudioVolume;
+                _audioMuted = value;
+                _audioMutedButton.Checked = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that set the audio volume.
+        /// </summary>
+        public float AudioVolume
+        {
+            get => _audioVolume;
+            set
+            {
+                if (!AudioMuted)
+                    Audio.MasterVolume = value;
+                _audioVolume = value;
+                _audioVolumeValueBox.Value = value;
+            }
         }
 
         /// <summary>
@@ -168,9 +249,9 @@ namespace FlaxEditor.Windows
         public bool CenterMouseOnFocus { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether auto-focus game window on play mode start.
+        /// Gets or sets a value indicating what panel should be focused when play mode start.
         /// </summary>
-        public bool FocusOnPlay { get; set; }
+        public InterfaceOptions.PlayModeFocus FocusOnPlayOption { get; set; }
 
         private enum ViewportScaleType
         {
@@ -201,13 +282,37 @@ namespace FlaxEditor.Windows
             public bool Active;
         }
 
+        private class PlayModeFocusOptions
+        {
+            /// <summary>
+            /// The name.
+            /// </summary>
+            public string Name;
+
+            /// <summary>
+            /// The tooltip.
+            /// </summary>
+            public string Tooltip;
+
+            /// <summary>
+            /// The type of focus.
+            /// </summary>
+            public InterfaceOptions.PlayModeFocus FocusOption;
+
+            /// <summary>
+            /// If the option is active.
+            /// </summary>
+            public bool Active;
+        }
+
         /// <summary>
         /// Root control for game UI preview in Editor. Supports basic UI editing via <see cref="UIEditorRoot"/>.
         /// </summary>
         private class GameRoot : UIEditorRoot
         {
+            internal bool Editable = true;
             public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode;
-            public override bool EnableSelecting => !Editor.IsPlayMode || Time.GamePaused;
+            public override bool EnableSelecting => (!Editor.IsPlayMode || Time.GamePaused) && Editable;
             public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
         }
 
@@ -225,9 +330,7 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnOptionsChanged;
             OnOptionsChanged(Editor.Options.Options);
 
-            // Create toolstrip
-            if (_showToolStrip)
-                CreateOptionsToolStrip();
+            CreateOptionsToolStrip();
 
             var task = MainRenderTask.Instance;
             
@@ -235,9 +338,9 @@ namespace FlaxEditor.Windows
             _viewport = new RenderOutputControl(task)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, _showToolStrip ? _toolStripHeight : 0, 0),
+                Offsets = new Margin(0, 0, _toolStripHeight, 0),
                 AutoFocus = false,
-                Parent = this
+                Parent = this,
             };
             task.PostRender += OnPostRender;
 
@@ -259,6 +362,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
             InputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
+#if USE_PROFILER
             InputActions.Add(options => options.ProfilerStartStop, () =>
             {
                 bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
@@ -268,8 +372,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.ProfilerClear, () =>
             {
                 Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
             });
+#endif
             InputActions.Add(options => options.Save, () =>
             {
                 if (Editor.IsPlayMode)
@@ -333,57 +438,56 @@ namespace FlaxEditor.Windows
                 Height = _toolStripHeight,
                 Parent = this,
             };
-            
-            // Setup toolstrip items
-            var focusLabel = new Label
-            {
-                Text = "Start Focused",
-                HorizontalAlignment = TextAlignment.Near,
-                Parent = toolStrip,
-            };
-            focusLabel.Width = styleSmallFont.MeasureText(focusLabel.Text).X + 2;
-            var focusCheckBox = new CheckBox
-            {
-                Checked = FocusOnPlay,
-                Parent = toolStrip
-            };
-            focusCheckBox.StateChanged += box => FocusOnPlay = box.Checked;
+
+            _focusSettingsButton = toolStrip.AddButton("Focus", ShowPlayModeFocusOptions);
 
             toolStrip.AddSeparator();
 
             _viewportSettingsButton = toolStrip.AddButton("Viewport Settings", ShowViewportSettings);
             
             toolStrip.AddSeparator();
-            
-            var showGuiLabel = new Label
-            {
-                Text = "Show GUI",
-                HorizontalAlignment = TextAlignment.Near,
-                Parent = toolStrip,
-            };
-            showGuiLabel.Width = styleSmallFont.MeasureText(showGuiLabel.Text).X + 2;
-            var showGuiCheckBox = new CheckBox
-            {
-                Checked = ShowGUI,
-                Parent = toolStrip
-            };
-            showGuiCheckBox.StateChanged += box => ShowGUI = box.Checked;
+
+            _toggleGuiButton = toolStrip.AddButton("Show GUI", () => {
+                ShowGUI = !ShowGUI;
+                _toggleGuiButton.Checked = ShowGUI;
+            });
+            _toggleGuiButton.Checked = ShowGUI;
+
+            _toggleGuiEditButton = toolStrip.AddButton("Edit GUI", () => {
+                EditGUI = !EditGUI;
+                _toggleGuiEditButton.Checked = EditGUI;
+            });
+            _toggleGuiEditButton.Checked = EditGUI;
 
             toolStrip.AddSeparator();
-            
-            var showDebugDrawLabel = new Label
+
+            _toggleDebugDrawButton = toolStrip.AddButton("Debug Draw", () => {
+                ShowDebugDraw = !ShowDebugDraw;
+                _toggleDebugDrawButton.Checked = ShowDebugDraw;
+            });
+            _toggleDebugDrawButton.Checked = ShowDebugDraw;
+
+            toolStrip.AddSeparator();
+
+            _audioMutedButton = toolStrip.AddButton(Editor.Instance.Icons.Speaker32, () =>
             {
-                Text = "Show Debug Draw",
+                AudioMuted = !AudioMuted;
+                _audioMutedButton.Checked = !AudioMuted;
+            });
+            _audioMutedButton.Checked = !AudioMuted;
+
+            var audioVolumeLabel = new Label
+            {
+                Text = "Audio Volume",
                 HorizontalAlignment = TextAlignment.Near,
                 Parent = toolStrip,
             };
-            showDebugDrawLabel.Width = styleSmallFont.MeasureText(showDebugDrawLabel.Text).X + 2;
-            var showDebugDrawCheckBox = new CheckBox
+            audioVolumeLabel.Width = styleSmallFont.MeasureText(audioVolumeLabel.Text).X + 2;
+            _audioVolumeValueBox = new FloatValueBox(AudioVolume, 0, 0, 50, 0, 1)
             {
-                Checked = ShowDebugDraw,
-                Parent = toolStrip
+                Parent = toolStrip,
             };
-            showDebugDrawCheckBox.StateChanged += box => ShowDebugDraw = box.Checked;
+            _audioVolumeValueBox.ValueChanged += () => AudioVolume = _audioVolumeValueBox.Value;
 
             toolStrip.AddSeparator();
 
@@ -393,10 +497,10 @@ namespace FlaxEditor.Windows
         private void ShowViewportSettings()
         {
             var cm = new ContextMenu();
-            cm.MinimumWidth = 200;
+
             // Viewport Brightness
             {
-                var brightness = cm.AddButton("Viewport Brightness");
+                var brightness = cm.AddButton("Brightness");
                 brightness.CloseMenuOnClick = false;
                 var brightnessValue = new FloatValueBox(_viewport.Brightness, 140, 2, 50.0f, 0.001f, 10.0f, 0.001f)
                 {
@@ -407,7 +511,7 @@ namespace FlaxEditor.Windows
 
             // Viewport Resolution
             {
-                var resolution = cm.AddButton("Viewport Resolution");
+                var resolution = cm.AddButton("Resolution");
                 resolution.CloseMenuOnClick = false;
                 var resolutionValue = new FloatValueBox(_viewport.ResolutionScale, 140, 2, 50.0f, 0.1f, 4.0f, 0.001f)
                 {
@@ -458,12 +562,28 @@ namespace FlaxEditor.Windows
                     });
                 }
 
-                var vsMenu = cm.AddChildMenu("Viewport Size").ContextMenu;
+                var vsMenu = cm.AddChildMenu("Size").ContextMenu;
 
                 CreateViewportSizingContextMenu(vsMenu);
             }
-                
-            cm.Show(_viewportSettingsButton, _viewportSettingsButton.PointFromScreen(Input.MouseScreenPosition));
+
+            cm.Width = 10f;
+
+            cm.Show(_viewportSettingsButton, new Float2(0f, _viewportSettingsButton.Height));
+        }
+
+        private void ShowPlayModeFocusOptions()
+        {
+            // Focus on play
+            var cm = new ContextMenu();
+            GenerateFocusOptionsContextMenu(cm);
+            cm.AddSeparator();
+
+            var button = cm.AddButton("Remove override");
+            button.TooltipText = "Reset the override to the value set in the editor options.";
+            button.Clicked += () => FocusOnPlayOption = Editor.Instance.Options.Options.Interface.FocusOnPlayMode;
+
+            cm.Show(_focusSettingsButton, new Float2(0f, _focusSettingsButton.Height));
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -522,9 +642,11 @@ namespace FlaxEditor.Windows
 
         private void ResizeViewport()
         {
-            var toolStripHeight = _showToolStrip ? _toolStripHeight : 0;
+            if (_viewport == null)
+                return;
+
             if (!_freeAspect)
-                _windowAspectRatio = Width / (Height - toolStripHeight);
+                _windowAspectRatio = Width / (Height - _toolStripHeight);
             else
                 _windowAspectRatio = 1;
 
@@ -532,9 +654,9 @@ namespace FlaxEditor.Windows
             var scaleHeight = _windowAspectRatio / _viewportAspectRatio;
 
             if (scaleHeight < 1)
-                _viewport.Bounds = new Rectangle(0, (Height - toolStripHeight) * (1 - scaleHeight) / 2 + toolStripHeight, Width, (Height - toolStripHeight) * scaleHeight);
+                _viewport.Bounds = new Rectangle(0, (Height - _toolStripHeight) * (1 - scaleHeight) / 2 + _toolStripHeight, Width, (Height - _toolStripHeight) * scaleHeight);
             else
-                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, toolStripHeight, Width * scaleWidth, (Height - toolStripHeight));
+                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, _toolStripHeight, Width * scaleWidth, (Height - _toolStripHeight));
             _viewport.SyncBackbufferSize();
             PerformLayout();
         }
@@ -577,24 +699,7 @@ namespace FlaxEditor.Windows
         private void OnOptionsChanged(EditorOptions options)
         {
             CenterMouseOnFocus = options.Interface.CenterMouseOnGameWinFocus;
-            FocusOnPlay = options.Interface.FocusGameWinOnPlay;
-
-            var lastToolStripShow = _showToolStrip;
-            _showToolStrip = options.Interface.ShowGameWindowOptionsToolbar;
-            if (lastToolStripShow != _showToolStrip)
-            {
-                if (_showToolStrip && Children.FirstOrDefault(x => x is ToolStrip) == null)
-                {
-                    CreateOptionsToolStrip();
-                }
-                else
-                {
-                    var toolStrip = Children.FirstOrDefault(x => x is ToolStrip);
-                    RemoveChild(toolStrip);
-                }
-                
-                ResizeViewport();
-            }
+            FocusOnPlayOption = options.Interface.FocusOnPlayMode;
         }
 
         private void PlayingStateOnSceneDuplicating()
@@ -649,6 +754,40 @@ namespace FlaxEditor.Windows
             if (ContainsFocus && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible && Screen.CursorLock == CursorLockMode.None)
             {
                 Parent.Focus();
+            }
+        }
+
+        private void GenerateFocusOptionsContextMenu(ContextMenu pfMenu)
+        {
+            foreach (PlayModeFocusOptions f in _focusOptions)
+            {
+                f.Active = f.FocusOption == FocusOnPlayOption;
+
+                var button = pfMenu.AddButton(f.Name);
+                button.CloseMenuOnClick = false;
+                button.Tag = f;
+                button.TooltipText = f.Tooltip;
+                button.Icon = f.Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                button.Clicked += () =>
+                {
+                    foreach (var child in pfMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb && cmb.Tag is PlayModeFocusOptions p)
+                        {
+                            if (cmb == button)
+                            {
+                                p.Active = true;
+                                button.Icon = Style.Current.CheckBoxTick;
+                                FocusOnPlayOption = p.FocusOption;
+                            }
+                            else if (p.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                p.Active = false;
+                            }
+                        }
+                    }
+                };
             }
         }
 
@@ -894,6 +1033,9 @@ namespace FlaxEditor.Windows
         {
             base.Draw();
 
+            if (AudioMuted)
+                Render2D.DrawLine(_audioMutedButton.BottomRight - 4f, _audioMutedButton.UpperLeft + 4f, Color.White);
+
             if (Camera.MainCamera == null)
             {
                 var style = Style.Current;
@@ -917,19 +1059,20 @@ namespace FlaxEditor.Windows
                     Render2D.DrawText(style.FontSmall, text, rect, style.Foreground * alpha, TextAlignment.Near, TextAlignment.Far);
                 }
 
+                // TODO: FIx box
                 timeout = 1.0f;
                 fadeOutTime = 0.6f;
                 animTime = time - timeout;
-                if (animTime < 0)
+                if (_viewport != null && animTime < 0)
                 {
                     float alpha = Mathf.Saturate(-animTime / fadeOutTime);
-                    Render2D.DrawRectangle(new Rectangle(new Float2(4), Size - 8), style.SelectionBorder * alpha);
+                    Render2D.DrawRectangle(new Rectangle(new Float2(4, 4 + _toolStripHeight), new Float2(Size.X - 8, Size.Y - 8 - _toolStripHeight)), style.SelectionBorder * alpha);
                 }
 
                 // Add overlay during debugger breakpoint hang
                 if (Editor.Simulation.IsDuringBreakpointHang)
                 {
-                    var bounds = new Rectangle(Float2.Zero, Size);
+                    var bounds = new Rectangle(Float2.Zero, Size - _toolStripHeight);
                     Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
                     Render2D.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
                 }
@@ -1103,6 +1246,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutSerialize(XmlWriter writer)
         {
             writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
+            writer.WriteAttributeString("EditGUI", EditGUI.ToString());
             writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
             writer.WriteAttributeString("DefaultViewportScaling", JsonSerializer.Serialize(_defaultViewportScaling));
             writer.WriteAttributeString("CustomViewportScaling", JsonSerializer.Serialize(_customViewportScaling));
@@ -1113,6 +1257,8 @@ namespace FlaxEditor.Windows
         {
             if (bool.TryParse(node.GetAttribute("ShowGUI"), out bool value1))
                 ShowGUI = value1;
+            if (bool.TryParse(node.GetAttribute("EditGUI"), out value1))
+                EditGUI = value1;
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
             if (node.HasAttribute("CustomViewportScaling"))
@@ -1138,6 +1284,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutDeserialize()
         {
             ShowGUI = true;
+            EditGUI = true;
             ShowDebugDraw = false;
         }
     }

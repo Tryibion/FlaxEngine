@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Reflection;
 using FlaxEngine;
@@ -54,6 +54,7 @@ namespace FlaxEditor
         public SpriteHandle Error32;
         public SpriteHandle Bone32;
         public SpriteHandle BoneFull32;
+        public SpriteHandle Speaker32;
 
         // Visject
         public SpriteHandle VisjectBoxOpen32;
