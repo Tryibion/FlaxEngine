@@ -548,14 +548,12 @@ namespace Flax.Build.Platforms
                 }
                 else
                 {
-                    string libName = library;
                     int extIndex = library.LastIndexOf(".so");
                     if (extIndex != -1)
                     {
-                        var pathWihtoutVersioning = outputFilePath.Remove(extIndex + 3);
-                        libName = Path.GetFileNameWithoutExtension(library);
+                        var pathWihtoutVersioning = library.Remove(extIndex + 3);
+                        args.Add(string.Format("\"-l{0}\"", GetLibName(pathWihtoutVersioning)));
                         libraryPaths.Add(dir);
-                        args.Add(string.Format("\"-l{0}\"", GetLibName(libName)));
                     }
                     else
                     {
@@ -586,14 +584,12 @@ namespace Flax.Build.Platforms
                 }
                 else
                 {
-                    string libName = library;
                     int extIndex = library.LastIndexOf(".so");
                     if (extIndex != -1)
                     {
-                        var pathWihtoutVersioning = outputFilePath.Remove(extIndex + 3);
-                        libName = Path.GetFileNameWithoutExtension(library);
+                        var pathWihtoutVersioning = library.Remove(extIndex + 3);
+                        args.Add(string.Format("\"-l{0}\"", GetLibName(pathWihtoutVersioning)));
                         libraryPaths.Add(dir);
-                        args.Add(string.Format("\"-l{0}\"", GetLibName(libName)));
                     }
                     else
                     {
