@@ -826,6 +826,20 @@ ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname)
     return ScriptingTypeHandle();
 }
 
+ScriptingTypeHandle Scripting::FindScriptingType(const StringAnsiView& fullname, const StringAnsiView& assemblyName)
+{
+    if (assemblyName.HasChars())
+    {
+        if (auto module = BinaryModule::GetModule(assemblyName))
+        {
+            int32 typeIndex;
+            if (module->FindScriptingType(fullname, typeIndex))
+                return ScriptingTypeHandle(module, typeIndex);
+        }
+    }
+    return FindScriptingType(fullname);
+}
+
 ScriptingObject* Scripting::NewObject(const ScriptingTypeHandle& type)
 {
     if (!type)

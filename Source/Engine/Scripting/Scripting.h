@@ -131,6 +131,14 @@ public:
     static ScriptingTypeHandle FindScriptingType(const StringAnsiView& fullname);
 
     /// <summary>
+    /// Finds the scripting type of the given fullname by searching a specific scripting assembly and then all loaded assemblies.
+    /// </summary>
+    /// <param name="fullname">The full name of the type eg: System.Int64.</param>
+    /// <param name="assemblyName">The assembly name to search first.</param>
+    /// <returns>The scripting type or invalid type if missing.</returns>
+    static ScriptingTypeHandle FindScriptingType(const StringAnsiView& fullname, const StringAnsiView& assemblyName);
+
+    /// <summary>
     /// Creates a new instance of the given type object (native construction).
     /// </summary>
     /// <param name="type">The scripting object type class.</param>

@@ -456,7 +456,22 @@ namespace FlaxEditor.CustomEditors.Editors
             base.Initialize(layout);
 
             if (_element != null)
-                _element.CustomControl.ValueChanged += () => SetValue(new SoftTypeReference(_element.CustomControl.ValueTypeName));
+                _element.CustomControl.ValueChanged += () =>
+                {
+                    var value = _element.CustomControl.Value;
+                    if (value != ScriptType.Null)
+                    {
+                        var softType = new SoftTypeReference(value.TypeName);
+                        var managedType = value.Type;
+                        if (managedType != null)
+                            softType.AssemblyName = managedType.Assembly.GetName().Name;
+                        SetValue(softType);
+                    }
+                    else
+                    {
+                        SetValue(new SoftTypeReference());
+                    }
+                };
         }
 
         /// <inheritdoc />

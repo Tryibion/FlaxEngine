@@ -111,7 +111,7 @@ namespace FlaxEngine.Json
     }
 
     /// <summary>
-    /// Serialize <see cref="SoftTypeReference"/> as typename string in internal format.
+    /// Serialize <see cref="SoftTypeReference"/> as typename string or object in internal format.
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.JsonConverter" />
     internal class SoftTypeReferenceConverter : JsonConverter
@@ -119,7 +119,18 @@ namespace FlaxEngine.Json
         /// <inheritdoc />
         public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
         {
-            writer.WriteValue(((SoftTypeReference)value).TypeName);
+            var softType = (SoftTypeReference)value;
+            if (string.IsNullOrEmpty(softType.AssemblyName))
+            {
+                writer.WriteValue(softType.TypeName);
+                return;
+            }
+            writer.WriteStartObject();
+            writer.WritePropertyName("TypeName");
+            writer.WriteValue(softType.TypeName);
+            writer.WritePropertyName("AssemblyName");
+            writer.WriteValue(softType.AssemblyName);
+            writer.WriteEndObject();
         }
 
         /// <inheritdoc />
@@ -128,6 +139,32 @@ namespace FlaxEngine.Json
             var result = new SoftTypeReference();
             if (reader.TokenType == JsonToken.String)
                 result.TypeName = (string)reader.Value;
+            else if (reader.TokenType == JsonToken.StartObject)
+            {
+                while (reader.Read())
+                {
+                    switch (reader.TokenType)
+                    {
+                    case JsonToken.PropertyName:
+                    {
+                        var propertyName = (string)reader.Value;
+                        switch (propertyName)
+                        {
+                        case "TypeName":
+                            result.TypeName = reader.ReadAsString();
+                            break;
+                        case "AssemblyName":
+                            result.AssemblyName = reader.ReadAsString();
+                            break;
+                        }
+                        break;
+                    }
+                    case JsonToken.Comment: break;
+                    case JsonToken.String: break;
+                    default: return result;
+                    }
+                }
+            }
             return result;
         }
 

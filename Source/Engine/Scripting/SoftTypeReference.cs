@@ -10,6 +10,7 @@ namespace FlaxEngine
     public struct SoftTypeReference : IComparable, IComparable<SoftTypeReference>
     {
         private string _typeName;
+        private string _assemblyName;
 
         /// <summary>
         /// Gets or sets the type full name (eg. FlaxEngine.Actor).
@@ -21,12 +22,42 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets or sets the type assembly name (eg. FlaxEngine.CSharp).
+        /// </summary>
+        public string AssemblyName
+        {
+            get => _assemblyName;
+            set => _assemblyName = value;
+        }
+
+        /// <summary>
         /// Gets or sets the type (resolves soft reference).
         /// </summary>
         public Type Type
         {
-            get => _typeName != null ? Type.GetType(_typeName) : null;
-            set => _typeName = value?.FullName;
+            get
+            {
+                if (_typeName == null)
+                    return null;
+                if (!string.IsNullOrEmpty(_assemblyName))
+                {
+                    var type = Type.GetType(_typeName + ", " + _assemblyName);
+                    if (type != null)
+                        return type;
+                }
+                return Type.GetType(_typeName);
+            }
+            set
+            {
+                if (value == null)
+                {
+                    _typeName = null;
+                    _assemblyName = null;
+                    return;
+                }
+                _typeName = value.FullName;
+                _assemblyName = _typeName != null ? value.Assembly.GetName().Name : null;
+            }
         }
 
         /// <summary>
@@ -36,6 +67,18 @@ namespace FlaxEngine
         public SoftTypeReference(string typeName)
         {
             _typeName = typeName;
+            _assemblyName = null;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SoftTypeReference"/>.
+        /// </summary>
+        /// <param name="typeName">The type name.</param>
+        /// <param name="assemblyName">The assembly name.</param>
+        public SoftTypeReference(string typeName, string assemblyName)
+        {
+            _typeName = typeName;
+            _assemblyName = assemblyName;
         }
 
         /// <summary>
@@ -65,7 +108,7 @@ namespace FlaxEngine
         /// <returns>The soft type reference.</returns>
         public static implicit operator SoftTypeReference(Type s)
         {
-            return new SoftTypeReference { _typeName = s?.FullName };
+            return new SoftTypeReference { Type = s };
         }
 
         /// <inheritdoc />
@@ -77,7 +120,10 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return _typeName?.GetHashCode() ?? 0;
+            var hash = _typeName?.GetHashCode() ?? 0;
+            if (_assemblyName != null)
+                hash = (hash * 397) ^ _assemblyName.GetHashCode();
+            return hash;
         }
 
         /// <inheritdoc />
@@ -91,7 +137,10 @@ namespace FlaxEngine
         /// <inheritdoc />
         public int CompareTo(SoftTypeReference other)
         {
-            return string.Compare(_typeName, other._typeName, StringComparison.Ordinal);
+            var result = string.Compare(_typeName, other._typeName, StringComparison.Ordinal);
+            if (result != 0)
+                return result;
+            return string.Compare(_assemblyName, other._assemblyName, StringComparison.Ordinal);
         }
     }
 }
